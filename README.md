@@ -60,7 +60,6 @@ CelularesPY/
 |
 |-- Frontend/             # Interfaz web
 |   |-- app.py
-|   |-- consumemain.py    # Cliente de consola (alternativa)
 |   |-- requirements.txt
 |   `-- Dockerfile
 |
