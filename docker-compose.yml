@@ -1,0 +1,81 @@
+services:
+
+  # ── Microservicio 1: catálogo de celulares ──────────────────────────────
+  celulares:
+    build: ./Celulares
+    container_name: celulares_service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./Celulares:/app
+    environment:
+      - DB_PATH=/app/celulares.db
+    restart: unless-stopped
+    networks:
+      - celulares_net
+
+  # ── Microservicio 2: gestión de stock ───────────────────────────────────
+  stock:
+    build: ./Stock
+    container_name: stock_service
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./Stock:/app
+    environment:
+      - DB_PATH=/app/stock.db
+    restart: unless-stopped
+    networks:
+      - celulares_net
+
+  # ── Microservicio 3: reportes (solo lectura) ────────────────────────────
+  reportes:
+    build: ./Reportes
+    container_name: reportes_service
+    ports:
+      - "8003:8003"
+    environment:
+      - CELULARES_URL=http://celulares:8001
+      - STOCK_URL=http://stock:8002
+    depends_on:
+      - celulares
+      - stock
+    restart: unless-stopped
+    networks:
+      - celulares_net
+
+  # ── API Gateway: punto único de entrada ────────────────────────────────
+  gateway:
+    build: ./Gateway
+    container_name: celulares_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - CELULARES_URL=http://celulares:8001
+      - STOCK_URL=http://stock:8002
+      - REPORTES_URL=http://reportes:8003
+    depends_on:
+      - celulares
+      - stock
+      - reportes
+    restart: unless-stopped
+    networks:
+      - celulares_net
+
+  # ── Frontend: interfaz web ─────────────────────────────────────────────
+  frontend:
+    build: ./Frontend
+    container_name: celulares_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://gateway:8080
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - celulares_net
+
+networks:
+  celulares_net:
+    driver: bridge
